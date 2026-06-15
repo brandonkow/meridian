@@ -78,18 +78,36 @@ function generateRef(typeCode) {
   return `${typeCode}-${yr}-${seq}`;
 }
 
+function useCountUp(target, duration = 1000) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let raf, start;
+    const tick = (t) => {
+      if (start === undefined) start = t;
+      const p = Math.min((t - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(target * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target, duration]);
+  return val;
+}
+
 // ─── SUB-COMPONENTS ───────────────────────────────────────────────────────────
 
 function TopNav({ activeUser = "YA" }) {
   return (
     <header style={{
-      background: "#0a0908",
+      background: "linear-gradient(180deg, #15120d 0%, #0a0908 100%)",
       height: 52,
       display: "flex",
       alignItems: "center",
       padding: "0 24px",
       gap: 16,
-      borderBottom: "1px solid rgba(184,150,46,0.3)",
+      borderBottom: "1px solid rgba(184,150,46,0.28)",
+      boxShadow: "0 1px 0 rgba(184,150,46,0.12), 0 4px 18px rgba(0,0,0,0.16)",
       flexShrink: 0,
       position: "sticky",
       top: 0,
@@ -123,7 +141,7 @@ function TopNav({ activeUser = "YA" }) {
         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ade80", display: "inline-block" }} />
         MAS-GUARD-001 · Active
       </div>
-      <div style={{
+      <div className="mer-avatar" style={{
         width: 32, height: 32, borderRadius: "50%",
         background: "rgba(184,150,46,0.15)",
         border: "1px solid #B8962E",
@@ -156,6 +174,7 @@ function Sidebar({ active, onNav }) {
     return (
       <div
         onClick={() => onNav(item.id)}
+        className="mer-navitem"
         style={{
           display: "flex", alignItems: "center", gap: 10,
           padding: "8px 12px",
@@ -212,9 +231,9 @@ function Sidebar({ active, onNav }) {
   );
 }
 
-function Card({ children, style = {} }) {
+function Card({ children, style = {}, interactive = false, className = "" }) {
   return (
-    <div style={{
+    <div className={`mer-card${interactive ? " mer-interactive" : ""}${className ? " " + className : ""}`} style={{
       background: "#fff",
       border: "0.5px solid #e5e7eb",
       borderRadius: 12,
@@ -390,6 +409,32 @@ function Textarea({ value, onChange, placeholder, rows = 3 }) {
 
 // ─── VIEWS ────────────────────────────────────────────────────────────────────
 
+function StatCard({ s, index }) {
+  const value = useCountUp(s.value, 1100);
+  return (
+    <div className="mer-card mer-stat" style={{
+      background: "#fff",
+      border: "0.5px solid #e5e7eb",
+      borderRadius: 12,
+      overflow: "hidden",
+      padding: "16px 18px",
+      animationDelay: `${index * 80}ms`,
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>{s.label}</div>
+        <span style={{
+          width: 30, height: 30, borderRadius: 8,
+          background: "rgba(184,150,46,0.1)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontSize: 14, color: "#B8962E", flexShrink: 0,
+        }}>{s.icon}</span>
+      </div>
+      <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 30, fontWeight: 500, color: "#111827", lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, fontFamily: "'DM Sans', sans-serif" }}>{s.sub}</div>
+    </div>
+  );
+}
+
 function DashboardView({ onNav }) {
   const stats = [
     { label: "Active Engagements", value: 4, sub: "2 in draft · 1 in review", icon: "◈" },
@@ -407,18 +452,7 @@ function DashboardView({ onNav }) {
 
       {/* Stat Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 28 }}>
-        {stats.map((s, i) => (
-          <Card key={i}>
-            <div style={{ padding: "16px 18px" }}>
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: "#6b7280", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>{s.label}</div>
-                <span style={{ fontSize: 16, color: "#B8962E", opacity: 0.7 }}>{s.icon}</span>
-              </div>
-              <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 30, fontWeight: 500, color: "#111827", lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6, fontFamily: "'DM Sans', sans-serif" }}>{s.sub}</div>
-            </div>
-          </Card>
-        ))}
+        {stats.map((s, i) => <StatCard key={i} s={s} index={i} />)}
       </div>
 
       {/* Recent Engagements */}
@@ -427,7 +461,7 @@ function DashboardView({ onNav }) {
           <CardHeader title="Recent engagements" icon="◈" action={<Btn onClick={() => onNav("builder")}>New Report +</Btn>} />
           <div>
             {ENGAGEMENTS.map((e, i) => (
-              <div key={i} style={{
+              <div key={i} className="mer-row" style={{
                 padding: "14px 20px",
                 borderBottom: i < ENGAGEMENTS.length - 1 ? "0.5px solid #f3f4f6" : "none",
                 display: "flex", alignItems: "center", gap: 16,
@@ -1023,7 +1057,7 @@ function EngagementsView({ onNav }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {filtered.map((e, i) => (
-          <Card key={i} style={{ cursor: "pointer" }}>
+          <Card key={i} interactive style={{ cursor: "pointer" }}>
             <div style={{ padding: "18px 22px", display: "flex", alignItems: "center", gap: 18 }}>
               <div style={{
                 width: 44, height: 44, borderRadius: 10,
@@ -1295,6 +1329,37 @@ function GuardrailLibraryView() {
 
 // ─── APP ──────────────────────────────────────────────────────────────────────
 
+const APP_CSS = `
+*::selection { background: rgba(184,150,46,0.22); color: #4a3a0e; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e4dccb; border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: #d2c19a; background-clip: content-box; }
+
+@keyframes merFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes merFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.mer-view { height: 100%; overflow-y: auto; animation: merFadeUp 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+
+.mer-card { box-shadow: 0 1px 2px rgba(28,23,10,0.04), 0 1px 3px rgba(28,23,10,0.03); transition: box-shadow 0.28s ease, transform 0.28s ease, border-color 0.28s ease; }
+.mer-interactive { cursor: pointer; }
+.mer-interactive:hover { box-shadow: 0 10px 30px rgba(28,23,10,0.10), 0 3px 8px rgba(28,23,10,0.05); transform: translateY(-3px); border-color: rgba(184,150,46,0.45) !important; }
+
+.mer-stat { animation: merFadeUp 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.mer-stat:hover { box-shadow: 0 10px 28px rgba(28,23,10,0.10); transform: translateY(-3px); border-color: rgba(184,150,46,0.4) !important; }
+
+.mer-navitem:hover { background: rgba(184,150,46,0.08) !important; color: #6b5a1f !important; }
+.mer-navitem:hover > span:first-child { opacity: 1 !important; }
+
+.mer-row { transition: background 0.16s ease; }
+.mer-row:hover { background: rgba(184,150,46,0.05); }
+
+.mer-avatar { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.mer-avatar:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(184,150,46,0.35); }
+
+input::placeholder, textarea::placeholder { color: #b6bcc6; }
+`;
+
 export default function App() {
   const [activeNav, setActiveNav] = useState("dashboard");
 
@@ -1317,12 +1382,15 @@ export default function App() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#f9fafb", fontFamily: "'DM Sans', sans-serif" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "radial-gradient(900px 440px at 88% -10%, rgba(184,150,46,0.07), rgba(184,150,46,0) 70%), #FAF9F5", fontFamily: "'DM Sans', sans-serif" }}>
+      <style>{APP_CSS}</style>
       <TopNav />
       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
         <Sidebar active={activeNav} onNav={setActiveNav} />
-        <main style={{ flex: 1, overflowY: "auto" }}>
-          {renderView()}
+        <main style={{ flex: 1, overflow: "hidden" }}>
+          <div className="mer-view" key={activeNav}>
+            {renderView()}
+          </div>
         </main>
       </div>
     </div>
