@@ -195,7 +195,7 @@ input:focus{outline:none;border-color:${NAVY}!important;box-shadow:0 0 0 3px ${N
 input::placeholder{color:${INK_F}}
 .lp-fit{height:calc(100vh - 60px);max-height:calc(100vh - 60px);display:flex;flex-direction:column;overflow:hidden}
 #lp-s0{height:calc(100vh - 60px);max-height:calc(100vh - 60px)}
-.lp-fit>section{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;justify-content:flex-start;width:100%;box-sizing:border-box;padding:clamp(24px,3.5vh,52px) 0!important}
+.lp-fit>section{flex:0 0 auto;min-height:calc(100vh - 60px);scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;width:100%;box-sizing:border-box;padding:clamp(24px,3.5vh,52px) 0!important}
 button,a,input,[role="button"]{font:inherit}
 button:focus-visible,a:focus-visible,input:focus-visible,[role="button"]:focus-visible{outline:2px solid ${GOLD_B}!important;outline-offset:3px}
 .skip-link{position:fixed;top:-60px;left:16px;z-index:12000;background:${NAVY};color:#fff;padding:10px 16px;border-radius:0 0 4px 4px;font-size:12px;font-weight:700;text-decoration:none;transition:top .2s}
@@ -329,9 +329,10 @@ function useCountUp(target,dur=750){
   return val;
 }
 function StatNum({v}){
-  const n=parseInt(v,10);
-  const c=useCountUp(isNaN(n)?0:n,720);
-  return<>{isNaN(n)?v:String(c).padStart(String(n).length,"0")}</>;
+  const s=String(v);
+  const isNum=/^\d+$/.test(s);
+  const c=useCountUp(isNum?parseInt(s,10):0,720);
+  return<>{isNum?String(c).padStart(s.length,"0"):v}</>;
 }
 function getMorphBlocks(s){return s?Array.from(s.querySelectorAll("[data-morph]")).slice(0,12):[]}
 function clearMorph(el){el.style.transition=el.style.transform=el.style.opacity=el.style.willChange="";}
@@ -1067,7 +1068,7 @@ function LandingPage({onEnter,scrollRef,active}){
 
   return(
     <div className="lp-fit" ref={scrollRef}
-      style={{position:"relative",overflowY:"scroll",scrollSnapType:"y mandatory"}}>
+      style={{position:"relative",overflowY:"scroll",scrollSnapType:"y proximity"}}>
       <HeroSection onEnter={onEnter}/>
       <ReportSuiteSection/>
       <GuardrailSection/>
